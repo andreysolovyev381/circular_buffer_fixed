@@ -8,111 +8,151 @@
 #include <concepts>
 #include <type_traits>
 #include <cstddef>
-#include <cstdint>
 #include <stdexcept>
 #include <utility>
 
 namespace culib {
 
+	namespace const_values {
+		static std::size_t constexpr maxSizeForStack {1 << 17};
+	}//!namespace
+
 	namespace requirements {
 		template <typename Numeric>
-		concept is_index =
+		concept IsIndex =
 				std::convertible_to<Numeric, std::size_t> &&
-				std::three_way_comparable<Numeric> &&
-				requires (Numeric n) { n > 0; };
-	}
+				std::three_way_comparable<Numeric>;
+	}//!namespace
 
 	template <typename T>
-	class circular_buffer_fixed_t {
+	class CircularBufferFixed {
 	public:
 		template <typename Numeric>
-		requires requirements::is_index<Numeric>
-		explicit circular_buffer_fixed_t (Numeric n)
-				: last_idx {n - 1}
-				, front_idx {0}
-				, back_idx {0}
+		requires requirements::IsIndex<Numeric>
+		explicit CircularBufferFixed (Numeric n, T defaultValue)
+				: sz 		{static_cast<std::int32_t>(n)}
+				, frontIdx {0}
+				, backIdx 	{static_cast<std::int32_t>(n) - 1}
 		{
-			data.resize(n);
-		}
-
-		template <typename Numeric>
-		requires requirements::is_index<Numeric> &&
-				std::is_default_constructible_v<T>
-		explicit circular_buffer_fixed_t (Numeric n, T default_value)
-				: last_idx {n - 1}
-				, front_idx {0}
-				, back_idx {0}
-		{
-			data.resize(n, default_value);
+			if (n < 1) throw std::invalid_argument ("Can't create a fixed size circular buffer with size 0. Just why?..");
+			data.resize(n, defaultValue);
 		}
 
 		void push(T t) {
-			data[back_idx] = std::move(t);
-			shift_back_idx();
+			updatePush();
+			data[backIdx] = std::move(t);
 		}
-		void pop() {
-			shift_front_idx();
+
+		T pop() {
+			T res = data[frontIdx];
+			updatePop();
+			return res;
 		}
 
 		T& front() {
-			return data[front_idx];
+			return data[frontIdx];
 		}
 
 		T const& front() const {
-			return data.at(front_idx);
+			return data.at(frontIdx);
 		}
 
 		T& back() {
-			return data[back_idx];
+			return data[backIdx];
 		}
 
 		T const& back() const {
-			return data.at(back_idx);
+			return data.at(backIdx);
 		}
 
 		template <typename Numeric>
-		requires requirements::is_index<Numeric>
+		requires requirements::IsIndex<Numeric>
 		T& at(Numeric idx) {
-			if (idx < 0 || idx >= data.size()) {
+			auto idx_ = getIdx(idx);
+			if (idx_ >= sz) {
 				throw std::out_of_range("out of range with idx " + std::to_string(idx));
 			}
-			return data[idx];
-		}
-		template <typename Numeric>
-		requires requirements::is_index<Numeric>
-		T const& at(Numeric idx) const {
-			if (idx < 0 || idx >= data.size()) {
-				throw std::out_of_range("out of range with idx " + std::to_string(idx));
-			}
-			return data.at(idx);
+			return data[idx_];
 		}
 
 		template <typename Numeric>
-		requires requirements::is_index<Numeric>
+		requires requirements::IsIndex<Numeric>
+		T const& at(Numeric idx) const {
+			auto idx_ = getIdx(idx);
+			if (idx_ >= sz) {
+				throw std::out_of_range("out of range with idx " + std::to_string(idx));
+			}
+			return data.at(idx_);
+		}
+
+		template <typename Numeric>
+		requires requirements::IsIndex<Numeric>
 		T& operator[](Numeric idx) {
-			return data[idx];
+			auto idx_ = getIdx(idx);
+			return data[idx_];
+		}
+
+		std::size_t size() const {
+			return sz;
 		}
 
 	private:
 		std::vector<T> data;
-		std::int32_t const last_idx;
-		std::int32_t front_idx, back_idx;
+		std::int32_t const sz;
+		std::int32_t frontIdx, backIdx;
 
-		void shift_back_idx() {
-			if (last_idx == 0) return;
-			if (back_idx == last_idx) back_idx = 0;
-			else ++back_idx;
-
-			if (back_idx == front_idx) ++back_idx;
+		inline void updatePush () {
+			if (sz == 1) {
+				return;
+			}
+			if (backIdx == sz - 1) {
+				backIdx = 0;
+			}
+			else {
+				++backIdx;
+			}
+			if (backIdx == frontIdx) {
+				++frontIdx;
+				if (frontIdx == sz) {
+					frontIdx = 0;
+				}
+			}
 		}
-		void shift_front_idx() {
-			if (last_idx == 0) return;
-			if (front_idx == last_idx) front_idx = 0;
-			else ++front_idx;
+		inline void updatePop () {
+			if (sz == 1) {
+				return;
+			}
+			if (frontIdx == sz - 1) {
+				frontIdx = 0;
+			}
+			else {
+				++frontIdx;
+			}
+		}
 
-			if (front_idx == back_idx) ++front_idx;
+		template <typename Numeric>
+		inline std::int32_t getIdx (Numeric idx) const {
+			auto idx_ = static_cast<std::int32_t>(idx);
+			idx_ += frontIdx;
+			idx %= sz;
+			return idx;
 		}
 	};
 
+	template <typename T>
+	std::ostream& operator << (std::ostream& os, CircularBufferFixed<T> const& cb) {
+		os << "{";
+		bool first {true};
+		for (std::size_t i = 0; i != cb.size(); ++i) {
+			if (first) {
+				first = false;
+				os << cb.at(i);
+				continue;
+			}
+			os << ", " << cb.at(i);
+		}
+		os << "}";
+		return os;
+	}
 
 }//!namespace
