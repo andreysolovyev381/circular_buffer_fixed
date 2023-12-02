@@ -22,9 +22,10 @@ TEST(cb_fixed, successfull_creation) {
 
 #if defined(COMPILE_TIME_FAILURE)
 TEST(cb_fixed, failed_creation) {
-	circular_buffer_fixed_t<int> cb1;
+	CircularBufferFixed<int> cb1;
+	CircularBufferFixed<int> cb2(2);
 	std::string index {"1"};
-	circular_buffer_fixed_t<int> cb2(index);
+	CircularBufferFixed<int> cb3(index);
 }
 #endif
 
