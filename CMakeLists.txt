@@ -13,18 +13,33 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3 -D_LIBCPP_DEBUG=1")
 
 find_package(GTest REQUIRED)
 if(GTest_FOUND)
-    message(STATUS "TESTS FOUND GTest, including and linking...")
+    message(STATUS "MAIN FOUND GTest, including and linking...")
     include_directories(${GTEST_INCLUDE_DIRS})
 else()
     message(STATUS "NOT FOUND GTest")
 endif()
 
 
+# BOOST STARTS HERE-------------------
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+find_package (Boost REQUIRED)
+if(Boost_FOUND)
+    message(STATUS "MAIN: FOUND Boost, including and linking...")
+    include_directories(${BOOST_ROOT})
+else()
+    message(STATUS "MAIN: NOT FOUND Boost")
+endif()
+# BOOST ENDS HERE-------------------
+
+
 add_executable(${PROJECT_NAME}
-        tests_all.cpp
-        tests_cb_fixed.cpp
+        tests.cpp
 )
 target_link_libraries(${PROJECT_NAME}
+        ${Boost_LIBRARIES}
         GTest::GTest
         pthread
 )

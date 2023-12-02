@@ -5,7 +5,7 @@
     pop_front();
 ```
 
-- I tried to bench few commonly used containers, seems like there is chance to do slightly better. 
+- I tried to bench againt few commonly used containers, seems like there is chance to do slightly better (~5x times in my task). 
 - Refer to the benchmarking details here: [bench](https://github.com/andreysolovyev381/circular_buffer_bench)
-- 
+
 - Feel free to use at your own risk, no guarantees of any kind is given whatsoever. 
