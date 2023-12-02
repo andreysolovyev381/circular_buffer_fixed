@@ -36,6 +36,18 @@ namespace culib {
 	class CircularBufferFixed {
 	public:
 		using value_type = T;
+
+		template <typename Numeric>
+		requires requirements::IsIndex<Numeric> && std::is_default_constructible_v<T>
+		explicit CircularBufferFixed (Numeric n)
+				: sz 		{static_cast<std::int32_t>(n)}
+				, frontIdx 	{0}
+				, backIdx 	{static_cast<std::int32_t>(n) - 1}
+		{
+			if (n < 1) throw std::invalid_argument ("Can't create a fixed size circular buffer with size 0. Just why?..");
+			data.resize(n, T{});
+		}
+
 		template <typename Numeric>
 		requires requirements::IsIndex<Numeric>
 		explicit CircularBufferFixed (Numeric n, T defaultValue)

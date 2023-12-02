@@ -13,6 +13,9 @@ using namespace culib;
 //#define COMPILE_TIME_FAILURE
 
 TEST(cb_fixed, successfull_creation) {
+	CircularBufferFixed<int> cb1 (5);
+	ASSERT_EQ(cb1.front(), 0);
+	ASSERT_EQ(cb1.back(), 0);
 	CircularBufferFixed<int> cb2 (5, 42);
 	ASSERT_EQ(cb2.front(), 42);
 	ASSERT_EQ(cb2.back(), 42);
@@ -23,7 +26,6 @@ TEST(cb_fixed, successfull_creation) {
 #if defined(COMPILE_TIME_FAILURE)
 TEST(cb_fixed, failed_creation) {
 	CircularBufferFixed<int> cb1;
-	CircularBufferFixed<int> cb2(2);
 	std::string index {"1"};
 	CircularBufferFixed<int> cb3(index);
 }
