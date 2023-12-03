@@ -19,27 +19,10 @@ else()
     message(STATUS "NOT FOUND GTest")
 endif()
 
-
-# BOOST STARTS HERE-------------------
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-
-find_package (Boost REQUIRED)
-if(Boost_FOUND)
-    message(STATUS "MAIN: FOUND Boost, including and linking...")
-    include_directories(${BOOST_ROOT})
-else()
-    message(STATUS "MAIN: NOT FOUND Boost")
-endif()
-# BOOST ENDS HERE-------------------
-
-
 add_executable(${PROJECT_NAME}
         tests.cpp
 )
 target_link_libraries(${PROJECT_NAME}
-        ${Boost_LIBRARIES}
         GTest::GTest
         pthread
 )
