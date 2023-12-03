@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <utility>
+#include <functional>
 
 #ifdef __cpp_concepts
 #include <concepts>
