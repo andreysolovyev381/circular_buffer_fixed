@@ -50,6 +50,15 @@ TEST(update_data, push) {
 	cb.push(0);
 	ASSERT_EQ(cb.front(), 2);
 	ASSERT_EQ(cb.back(), 0);
+	cb.push(17);
+	ASSERT_EQ(cb.front(), 3);
+	ASSERT_EQ(cb.back(), 17);
+	cb.push(21);
+	ASSERT_EQ(cb.front(), 0);
+	ASSERT_EQ(cb.back(), 21);
+	cb.push(23);
+	ASSERT_EQ(cb.front(), 17);
+	ASSERT_EQ(cb.back(), 23);
 }
 
 TEST(update_data, pop) {
@@ -72,6 +81,10 @@ TEST(update_data, pop) {
 	ASSERT_EQ(cb.front(), 1);
 	ASSERT_EQ(cb.back(), 3);
 	ASSERT_EQ(value, 3);
+	value = cb.pop();
+	ASSERT_EQ(cb.front(), 2);
+	ASSERT_EQ(cb.back(), 3);
+	ASSERT_EQ(value, 1);
 }
 
 TEST(update_data, push_and_pop) {
