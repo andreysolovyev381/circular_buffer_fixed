@@ -297,26 +297,7 @@ TEST(update_data, mixed_modifications_4) {
 	value = cb.popBack();
 	ASSERT_EQ(cb.size(), 0u);
 }
-/*
-TEST(update_data, mixed_modifications_5) {
-	7
-	7
-	pop_front
-			pop_front
-	push_front 741
-	push_front 648
-	pop_front
-			pop_back
-	pop_front
 
-			error
-	error
-	648
-	741
-	error
-
-}
-*/
 TEST(access, method_at) {
 	CircularBufferFixed<int> cb (3, 42);
 	cb.pushBack(1);
