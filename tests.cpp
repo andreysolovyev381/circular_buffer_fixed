@@ -10,71 +10,6 @@ struct NonDefaultConstructible {
 	explicit NonDefaultConstructible (int);
 };
 
-TEST(index, requirements) {
-
-#ifdef __cpp_concepts
-	bool maybe_index {culib::requirements::isIndex<std::string>};
-	ASSERT_FALSE(maybe_index);
-
-	maybe_index = culib::requirements::isIndex<int>;
-	ASSERT_TRUE(maybe_index);
-
-	maybe_index = culib::requirements::isIndex<NonDefaultConstructible>;
-	ASSERT_FALSE(maybe_index);
-
-#else
-	//string as index
-	bool convertible {std::is_convertible_v<std::string, culib::requirements::BaseIndexType>};
-	ASSERT_FALSE(convertible);
-
-	bool constructible = std::is_constructible_v<culib::requirements::BaseIndexType, std::string>;
-	ASSERT_FALSE(constructible);
-
-	bool three_way_comparable = std::conjunction_v<
-			culib::requirements::SFINAE<std::string, std::equal_to<std::string>>,
-			culib::requirements::SFINAE<std::string, std::less<std::string>>,
-			culib::requirements::SFINAE<std::string, std::greater<std::string>>
-	>;
-	ASSERT_TRUE(three_way_comparable);
-
-	bool compilable =
-			std::conjunction_v<
-					std::is_convertible<std::string, culib::requirements::BaseIndexType>,
-					std::conjunction<
-							culib::requirements::SFINAE<std::string, std::equal_to<std::string>>,
-							culib::requirements::SFINAE<std::string, std::less<std::string>>,
-							culib::requirements::SFINAE<std::string, std::greater<std::string>>
-					>>;
-
-	ASSERT_FALSE(compilable);
-
-	bool is_not_void = {
-			std::is_same_v<
-					std::enable_if_t<
-							!std::conjunction_v<
-									std::is_convertible<std::string, culib::requirements::BaseIndexType>,
-									std::conjunction<
-											culib::requirements::SFINAE<std::string, std::equal_to<std::string>>,
-											culib::requirements::SFINAE<std::string, std::less<std::string>>,
-											culib::requirements::SFINAE<std::string, std::greater<std::string>>
-									>>>,
-					void>
-	};
-	ASSERT_TRUE(is_not_void);
-
-	bool maybe_index = culib::requirements::isIndex<std::string>;
-	ASSERT_FALSE(maybe_index);
-
-	maybe_index = culib::requirements::isIndex<int>;
-	ASSERT_TRUE(maybe_index);
-
-	maybe_index = culib::requirements::isIndex<NonDefaultConstructible>;
-	ASSERT_FALSE(maybe_index);
-
-#endif
-
-}
-
 TEST(ctors, ctors_ok) {
 	CircularBufferFixed<int> cb1 (5);
 	ASSERT_EQ(cb1.front(), 0);
@@ -105,10 +40,6 @@ TEST(ctors, ctors_fail) {
 	ASSERT_FALSE(is_contructible);
 #endif
 #endif
-
-	ASSERT_FALSE(culib::requirements::isIndex<std::string>);
-	is_contructible = std::is_constructible_v<CircularBufferFixed<int>, std::string>;
-	ASSERT_FALSE(is_contructible);
 }
 
 TEST(update_data, pushBack) {

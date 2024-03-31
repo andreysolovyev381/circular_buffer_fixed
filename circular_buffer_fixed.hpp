@@ -20,47 +20,10 @@
 namespace culib {
 
 	namespace requirements {
-		using BaseIndexType = std::size_t;
-#ifdef __cpp_concepts
-		template <typename Numeric>
-		concept IsIndex =
-		std::convertible_to<Numeric, BaseIndexType> &&
-		std::three_way_comparable<Numeric>;
-
-		template <typename Numeric>
-		static inline constexpr bool isIndex {IsIndex<Numeric> ? true : false};
-
-#else
-
-		template <typename T, typename Cond, typename = void>
-		struct SFINAE : std::false_type {};
-
-		template <typename T, typename Cond>
-		struct SFINAE<T, Cond, std::void_t<Cond>> : std::true_type {};
-
-		template <typename Numeric, typename = void>
-		struct MaybeIndex : std::false_type {};
-
-		template <typename Numeric>
-		struct MaybeIndex<Numeric,
-				std::enable_if_t<std::conjunction_v<
-					std::is_convertible<BaseIndexType, Numeric>,
-					std::conjunction<
-						SFINAE<Numeric, std::equal_to<Numeric>>,
-						SFINAE<Numeric, std::less<Numeric>>,
-						SFINAE<Numeric, std::greater<Numeric>>
-									>>>>
-									: std::true_type {};
-
-		template <typename Numeric>
-		static constexpr bool isIndex {MaybeIndex<Numeric>::value};
-
-		template <typename Numeric>
-		using IsIndex = std::enable_if_t<isIndex<Numeric>, bool>;
 
 		template <typename DataType>
 		using IsDefaultConstructible = std::enable_if_t<std::is_default_constructible_v<DataType>, bool>;
-#endif
+
 	}//!namespace
 
 	template <typename T>
@@ -68,16 +31,14 @@ namespace culib {
 	public:
 		using value_type = T;
 
-#ifdef __cpp_concepts
-		template <requirements::IsIndex Numeric>
-		requires std::is_default_constructible_v<T>
-#else
-		template <typename Numeric,
-				requirements::IsIndex<Numeric> = true,
-				requirements::IsDefaultConstructible<T> = true>
+#ifndef __cpp_concepts
+		template <requirements::IsDefaultConstructible<T> = true>
 #endif
-		explicit CircularBufferFixed (Numeric n)
-				: cap 		{static_cast<std::int32_t>(n)}
+		explicit CircularBufferFixed (int n)
+#ifdef __cpp_concepts
+		requires std::is_default_constructible_v<T>
+#endif
+				: cap 		{n}
 				, sz        {0}
 				, frontIdx 	{0}
 				, backIdx 	{0}
@@ -86,16 +47,11 @@ namespace culib {
 			data.resize(n, T{});
 		}
 
-#ifdef __cpp_concepts
-		template <requirements::IsIndex Numeric>
-#else
-		template <typename Numeric, requirements::IsIndex<Numeric> = true>
-#endif
-		explicit CircularBufferFixed (Numeric n, T defaultValue)
-				: cap 		{static_cast<std::int32_t>(n)}
-				, sz        {static_cast<std::int32_t>(n)}
+		explicit CircularBufferFixed (int n, T defaultValue)
+				: cap 		{n}
+				, sz        {n}
 				, frontIdx 	{0}
-				, backIdx 	{static_cast<std::int32_t>(n) - 1}
+				, backIdx 	{n - 1}
 		{
 			if (n < 1) throw std::invalid_argument ("Can't create a fixed size circular buffer with size 0. Just why?..");
 			data.resize(n, defaultValue);
@@ -212,12 +168,7 @@ namespace culib {
 			return data.at(backIdx);
 		}
 
-#ifdef __cpp_concepts
-		template <requirements::IsIndex Numeric>
-#else
-		template <typename Numeric, requirements::IsIndex<Numeric> = true>
-#endif
-		T& at(Numeric idx) {
+		T& at(std::size_t idx) {
 			auto idx_ = getIdx(idx);
 			if (idx_ >= cap) {
 				throw std::out_of_range("CircularBufferFixed is out of range with idx " + std::to_string(idx));
@@ -225,12 +176,7 @@ namespace culib {
 			return data[idx_];
 		}
 
-#ifdef __cpp_concepts
-		template <requirements::IsIndex Numeric>
-#else
-		template <typename Numeric, requirements::IsIndex<Numeric> = true>
-#endif
-		T const& at(Numeric idx) const {
+		T const& at(std::size_t idx) const {
 			auto idx_ = getIdx(idx);
 			if (idx_ >= cap) {
 				throw std::out_of_range("CircularBufferFixed is out of range with idx " + std::to_string(idx));
@@ -238,12 +184,7 @@ namespace culib {
 			return data.at(idx_);
 		}
 
-#ifdef __cpp_concepts
-		template <requirements::IsIndex Numeric>
-#else
-		template <typename Numeric, requirements::IsIndex<Numeric> = true>
-#endif
-		T& operator[](Numeric idx) noexcept {
+		T& operator[](std::size_t idx) noexcept {
 			auto idx_ = getIdx(idx);
 			return data[idx_];
 		}
@@ -361,8 +302,7 @@ namespace culib {
 #endif
 		}
 
-		template <typename Numeric>
-		inline std::int32_t getIdx (Numeric idx) const noexcept {
+		inline std::int32_t getIdx (std::size_t idx) const noexcept {
 			auto idx_ = static_cast<std::int32_t>(idx);
 			idx_ += frontIdx;
 			idx_ %= cap;
