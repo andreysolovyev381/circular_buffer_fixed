@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include "circular_buffer_fixed.hpp"
+#include "../include/circular_buffer_fixed.hpp"
 
 #include <string>
 #include <sstream>
 
-using namespace culib;
+using namespace containers;
 
 struct NonDefaultConstructible {
 	explicit NonDefaultConstructible (int);

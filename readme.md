@@ -5,8 +5,8 @@
     pop_front();
 ```
 
-- I tried to bench against few commonly used containers, seems like there is chance to do slightly better (~5x times for my task ON MY MACHINE). 
-- Refer to the benchmarking details here: [bench](https://github.com/andreysolovyev381/circular_buffer_bench)
+- I tried to bench against few commonly used containers, seems like there is no chance win over Boost Circular Buffer. 
+- Refer to the benchmarking details at ./benchmark
 - See usage examples in the tests.cpp file.
 - Important thing is that this impl doesn't call a dtor of an element whee popping, therefore it should do less work that other implementations, ie boost::circular_buffer. But it becomes developer's problem to track data reliability.
 

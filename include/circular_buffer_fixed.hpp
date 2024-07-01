@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <type_traits>
 #include <cstddef>
@@ -17,7 +18,7 @@
 #endif
 
 
-namespace culib {
+namespace containers {
 
 	namespace requirements {
 
@@ -326,4 +327,4 @@ namespace culib {
 		return os;
 	}
 
-}//!namespace
+}//!namespace containers

@@ -1,0 +1,27 @@
+
+-------------------------------------------------------------------------
+Benchmark                               Time             CPU   Iterations
+-------------------------------------------------------------------------
+WarmUp                         1381855011 ns   1361956000 ns            1
+PushBackPopFrontVector/64             720 ns          714 ns      1036039
+PushBackPopFrontVector/512          37145 ns        36969 ns        18381 <---
+PushBackPopFrontVector/4096       2337917 ns      2319706 ns          316
+PushBackPopFrontVector/32768    389517546 ns    388184000 ns            2
+PushBackPopFrontVector/131072  7379488945 ns   7323585000 ns            1
+PushBackPopFrontDeque/64              338 ns          337 ns      2043557
+PushBackPopFrontDeque/512            2574 ns         2559 ns       270345 <---
+PushBackPopFrontDeque/4096          20255 ns        20128 ns        35198
+PushBackPopFrontDeque/32768        163738 ns       162509 ns         4525
+PushBackPopFrontDeque/131072       670253 ns       666455 ns         1069
+PushBackPopFrontCB/64                 267 ns          267 ns      2541970
+PushBackPopFrontCB/512               2151 ns         2141 ns       312269 <---
+PushBackPopFrontCB/4096             17793 ns        17602 ns        41598
+PushBackPopFrontCB/32768           140099 ns       138972 ns         5171
+PushBackPopFrontCB/131072          555092 ns       552138 ns         1278
+PushBackPopFrontCBFixed/64           63.7 ns         63.3 ns     11532885
+PushBackPopFrontCBFixed/512           414 ns          413 ns      1655136 <---
+PushBackPopFrontCBFixed/4096         3323 ns         3305 ns       210897
+PushBackPopFrontCBFixed/32768       26578 ns        26373 ns        25653
+PushBackPopFrontCBFixed/131072     115291 ns       113762 ns         6640
+
+Process finished with exit code 0
