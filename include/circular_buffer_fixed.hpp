@@ -5,71 +5,52 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
+#include <array>
 #include <type_traits>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
-
-#ifdef __cpp_concepts
-//#undef __cpp_concepts
 #include <concepts>
-#endif
-
 
 namespace containers {
 
-	namespace requirements {
-
-		template <typename DataType>
-		using IsDefaultConstructible = std::enable_if_t<std::is_default_constructible_v<DataType>, bool>;
-
-	}//!namespace
-
-	template <typename T>
+	template <typename T, std::int32_t N>
+	requires (requires {N > 0;})
 	class CircularBufferFixed {
 	public:
+		using container_type = CircularBufferFixed<T, 0>;
 		using value_type = T;
 
-#ifndef __cpp_concepts
-		template <requirements::IsDefaultConstructible<T> = true>
-#endif
-		explicit CircularBufferFixed (int n)
-#ifdef __cpp_concepts
+		explicit CircularBufferFixed ()
 		requires std::is_default_constructible_v<T>
-#endif
-				: cap 		{n}
-				, sz        {0}
-				, frontIdx 	{0}
-				, backIdx 	{0}
+				: sz        {0}
+				, front_idx {0}
+				, back_idx 	{0}
 		{
-			if (n < 1) throw std::invalid_argument ("Can't create a fixed size circular buffer with size 0. Just why?..");
-			data.resize(n, T{});
+			data.fill(T{});
 		}
 
-		explicit CircularBufferFixed (int n, T defaultValue)
-				: cap 		{n}
-				, sz        {n}
-				, frontIdx 	{0}
-				, backIdx 	{n - 1}
+		explicit CircularBufferFixed (T defaultValue)
+				: sz        {N}
+				, front_idx {0}
+				, back_idx 	{N - 1}
 		{
-			if (n < 1) throw std::invalid_argument ("Can't create a fixed size circular buffer with size 0. Just why?..");
-			data.resize(n, defaultValue);
+			data.fill(defaultValue);
 		}
 
-		void pushBack(T t) noexcept {
+		void push_back(T t) noexcept {
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(likely)
 			if (sz != 0u) [[likely]] {
-				updatePushBack();
+				update_on_push_back();
 			}
-			if (sz < cap) [[likely]] {
+			if (sz < N) [[likely]] {
 				++sz;
 			}
 	#else
 			if (__builtin_expect(sz != 0u, 1)) {
-				updatePushBack();
+				update_on_push_back();
 			}
 			if (__builtin_expect(sz < cap), 1){
 				++sz;
@@ -78,21 +59,21 @@ namespace containers {
 #else
 			throw std::runtime_error ("This is some kind of a wrong C++. Check your planet.");
 #endif
-			data[backIdx] = std::move(t);
+			data[back_idx] = std::move(t);
 		}
 
-		void pushFront(T t) noexcept {
+		void push_front(T t) noexcept {
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(likely)
 			if (sz != 0u) [[likely]] {
-				updatePushFront();
+				update_on_push_front();
 			}
-			if (sz < cap) [[likely]] {
+			if (sz < N) [[likely]] {
 				++sz;
 			}
 	#else
 			if (__builtin_expect(sz != 0u, 1)) {
-				updatePushFront();
+				update_on_push_front();
 			}
 			if (__builtin_expect(sz < cap), 1) {
 				++sz;
@@ -101,22 +82,22 @@ namespace containers {
 #else
 			throw std::runtime_error ("This is some kind of a wrong C++. Check your planet.");
 #endif
-			data[frontIdx] = std::move(t);
+			data[front_idx] = std::move(t);
 		}
 
-		T& popBack() noexcept {
-			T& res = data[backIdx];
+		T& pop_back() noexcept {
+			T& res = data[back_idx];
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(likely)
-			if (sz != 1 && frontIdx != backIdx) [[likely]] {
-				updatePopBack();
+			if (sz != 1 && front_idx != back_idx) [[likely]] {
+				update_on_pop_back();
 			}
 			if (sz > 0) [[likely]] {
 				--sz;
 			}
 	#else
-			if (__builtin_expect(sz != 1 && frontIdx != backIdx), 1) {
-				updatePopBack();
+			if (__builtin_expect(sz != 1 && front_idx != back_idx), 1) {
+				update_on_pop_back();
 			}
 			if (__builtin_expect(sz > 0), 1) {
 				--sz;
@@ -129,19 +110,19 @@ namespace containers {
 			return res;
 		}
 
-		T& popFront() noexcept {
-			T& res = data[frontIdx];
+		T& pop_front() noexcept {
+			T& res = data[front_idx];
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(likely)
-			if (sz != 1 && frontIdx != backIdx) [[likely]] {
-				updatePopFront();
+			if (sz != 1 && front_idx != back_idx) [[likely]] {
+				update_on_pop_front();
 			}
 			if (sz > 0)  [[likely]] {
 				--sz;
 			}
 	#else
-			if (__builtin_expect(sz != 1 && frontIdx != backIdx), 1) {
-				updatePopFront();
+			if (__builtin_expect(sz != 1 && front_idx != back_idx), 1) {
+				update_on_pop_front();
 			}
 			if (__builtin_expect(sz > 0), 1){
 				--sz;
@@ -154,44 +135,44 @@ namespace containers {
 		}
 
 		T& front() noexcept {
-			return data[frontIdx];
+			return data[front_idx];
 		}
 
 		T const& front() const {
-			return data.at(frontIdx);
+			return data.at(front_idx);
 		}
 
 		T& back() noexcept {
-			return data[backIdx];
+			return data[back_idx];
 		}
 
 		T const& back() const {
-			return data.at(backIdx);
+			return data.at(back_idx);
 		}
 
 		T& at(std::size_t idx) {
-			auto idx_ = getIdx(idx);
-			if (idx_ >= cap) {
+			auto idx_ = get_idx(idx);
+			if (idx_ >= N) {
 				throw std::out_of_range("CircularBufferFixed is out of range with idx " + std::to_string(idx));
 			}
 			return data[idx_];
 		}
 
 		T const& at(std::size_t idx) const {
-			auto idx_ = getIdx(idx);
-			if (idx_ >= cap) {
+			auto idx_ = get_idx(idx);
+			if (idx_ >= N) {
 				throw std::out_of_range("CircularBufferFixed is out of range with idx " + std::to_string(idx));
 			}
 			return data.at(idx_);
 		}
 
 		T& operator[](std::size_t idx) noexcept {
-			auto idx_ = getIdx(idx);
+			auto idx_ = get_idx(idx);
 			return data[idx_];
 		}
 
-		std::size_t capacity() const noexcept {
-			return cap;
+		static constexpr std::int32_t capacity() noexcept {
+			return N;
 		}
 
 		std::size_t size() const noexcept {
@@ -203,62 +184,32 @@ namespace containers {
 		}
 
 	private:
-		std::vector<T> data;
-		std::int32_t const cap;
+		std::array<T, N> data;
 		std::int32_t sz;
-		std::int32_t frontIdx, backIdx;
+		std::int32_t front_idx, back_idx;
 
-		inline void updatePushBack() noexcept {
-			++backIdx;
+		inline void update_on_push_back() noexcept {
+			++back_idx;
 
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(unlikely)
-			if (backIdx == cap) [[unlikely]] {
-				backIdx = 0;
+			if (back_idx == N) [[unlikely]] {
+				back_idx = 0;
 			}
-			if (backIdx == frontIdx) [[unlikely]] {
-				++frontIdx;
-				if (frontIdx == cap) [[unlikely]] {
-					frontIdx = 0;
+			if (back_idx == front_idx) [[unlikely]] {
+				++front_idx;
+				if (front_idx == N) [[unlikely]] {
+					front_idx = 0;
 				}
 			}
 	#else
-			if (__builtin_expect(backIdx == cap, 0)) {
-				backIdx = 0;
+			if (__builtin_expect(back_idx == cap, 0)) {
+				back_idx = 0;
 			}
-			if (__builtin_expect(backIdx == frontIdx, 0)) {
-				++frontIdx;
-				if (__builtin_expect(frontIdx == cap, 0)) {
-					frontIdx = 0;
-				}
-			}
-	#endif
-#else
-			throw std::runtime_error ("This is some kind of a wrong C++. Check your planet.");
-#endif
-		}
-
-		void updatePushFront() noexcept {
-			--frontIdx;
-#ifdef __has_cpp_attribute
-	#if __has_cpp_attribute(unlikely)
-			if (frontIdx == -1) [[unlikely]] {
-				frontIdx = cap - 1;
-			}
-			if(frontIdx == backIdx) [[unlikely]] {
-				--backIdx;
-				if (backIdx == -1) [[unlikely]] {
-					backIdx = cap - 1;
-				}
-			}
-	#else
-			if (__builtin_expect(frontIdx == -1), 0){
-				frontIdx = cap - 1;
-			}
-			if(__builtin_expect(frontIdx == backIdx), 0) {
-				--backIdx;
-				if (__builtin_expect(backIdx == -1), 0) {
-					backIdx = cap - 1;
+			if (__builtin_expect(back_idx == front_idx, 0)) {
+				++front_idx;
+				if (__builtin_expect(front_idx == cap, 0)) {
+					front_idx = 0;
 				}
 			}
 	#endif
@@ -267,17 +218,28 @@ namespace containers {
 #endif
 		}
 
-		inline void updatePopBack() noexcept {
-			--backIdx;
-
+		void update_on_push_front() noexcept {
+			--front_idx;
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(unlikely)
-			if (backIdx == -1) [[unlikely]] {
-				backIdx = cap - 1;
+			if (front_idx == -1) [[unlikely]] {
+				front_idx = N - 1;
+			}
+			if(front_idx == back_idx) [[unlikely]] {
+				--back_idx;
+				if (back_idx == -1) [[unlikely]] {
+					back_idx = N - 1;
+				}
 			}
 	#else
-			if (__builtin_expect(backIdx == -1, 0)) {
-				backIdx = cap - 1;
+			if (__builtin_expect(front_idx == -1), 0){
+				front_idx = cap - 1;
+			}
+			if(__builtin_expect(front_idx == back_idx), 0) {
+				--back_idx;
+				if (__builtin_expect(back_idx == -1), 0) {
+					back_idx = cap - 1;
+				}
 			}
 	#endif
 #else
@@ -285,17 +247,17 @@ namespace containers {
 #endif
 		}
 
-		inline void updatePopFront() noexcept {
-			++frontIdx;
+		inline void update_on_pop_back() noexcept {
+			--back_idx;
 
 #ifdef __has_cpp_attribute
 	#if __has_cpp_attribute(unlikely)
-			if (frontIdx == cap) [[unlikely]] {
-				frontIdx = 0;
+			if (back_idx == -1) [[unlikely]] {
+				back_idx = N - 1;
 			}
 	#else
-			if (__builtin_expect(frontIdx == cap, 0)) {
-				frontIdx = 0;
+			if (__builtin_expect(back_idx == -1, 0)) {
+				back_idx = cap - 1;
 			}
 	#endif
 #else
@@ -303,28 +265,30 @@ namespace containers {
 #endif
 		}
 
-		inline std::int32_t getIdx (std::size_t idx) const noexcept {
+		inline void update_on_pop_front() noexcept {
+			++front_idx;
+
+#ifdef __has_cpp_attribute
+	#if __has_cpp_attribute(unlikely)
+			if (front_idx == N) [[unlikely]] {
+				front_idx = 0;
+			}
+	#else
+			if (__builtin_expect(front_idx == cap, 0)) {
+				front_idx = 0;
+			}
+	#endif
+#else
+			throw std::runtime_error ("This is some kind of a wrong C++. Check your planet.");
+#endif
+		}
+
+		inline std::int32_t get_idx (std::size_t idx) const noexcept {
 			auto idx_ = static_cast<std::int32_t>(idx);
-			idx_ += frontIdx;
-			idx_ %= cap;
+			idx_ += front_idx;
+			idx_ %= N;
 			return idx_;
 		}
 	};
-
-	template <typename T>
-	std::ostream& operator << (std::ostream& os, CircularBufferFixed<T> const& cb) {
-		os << "[";
-		bool first {true};
-		for (std::size_t i = 0; i != cb.size(); ++i) {
-			if (first) {
-				first = false;
-				os << cb.at(i);
-				continue;
-			}
-			os << ", " << cb.at(i);
-		}
-		os << "]";
-		return os;
-	}
 
 }//!namespace containers

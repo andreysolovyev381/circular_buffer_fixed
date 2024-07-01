@@ -3,47 +3,33 @@
 
 
 int constexpr range_start {64};
-int constexpr range_stop {1<<17};
-
-static void WarmUp (benchmark::State& state) {
-	[[maybe_unused]] int i {0};
-	for (auto _ : state)
-		i = warm_up();
-}
-BENCHMARK(WarmUp);
+int constexpr range_stop {cb_capacity * 64};
 
 
 //-------------------------
 // push_back then pop_front
 
-static void PushBackPopFrontVector(benchmark::State& state) {
-	auto v = create<std::vector<T>> (state.range(0));
-	for (auto _ : state){
-		push_back_then_pop_front<std::vector<T>> (v, state.range(0));
-	}
-}
-BENCHMARK(PushBackPopFrontVector)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
 
 static void PushBackPopFrontDeque(benchmark::State& state) {
-	auto v = create<std::deque<T>> (state.range(0));
+	auto v = create<std::deque<data_alias>> (state.range(0));
 	for (auto _ : state){
-		push_back_then_pop_front<std::deque<T>> (v, state.range(0));
+		push_back_then_pop_front<std::deque<data_alias>> (v, state.range(0));
 	}
 }
 BENCHMARK(PushBackPopFrontDeque)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
 
-static void PushBackPopFrontCB(benchmark::State& state) {
-	auto v = create<boost::circular_buffer<T>> (state.range(0));
+static void PushBackPopFrontBoostCB(benchmark::State& state) {
+	auto v = create<boost::circular_buffer<data_alias>> (state.range(0));
 	for (auto _ : state){
-		push_back_then_pop_front<boost::circular_buffer<T>> (v, state.range(0));
+		push_back_then_pop_front<boost::circular_buffer<data_alias>> (v, state.range(0));
 	}
 }
-BENCHMARK(PushBackPopFrontCB)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
+BENCHMARK(PushBackPopFrontBoostCB)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
 
 static void PushBackPopFrontCBFixed(benchmark::State& state) {
-	auto v = create<containers::CircularBufferFixed<T>> (state.range(0));
+	auto v = create<containers::CircularBufferFixed<data_alias, cb_capacity>>(state.range(0));
 	for (auto _ : state){
-		push_back_then_pop_front<containers::CircularBufferFixed<T>> (v, state.range(0));
+		push_back_then_pop_front < CBFixed > (v, state.range(0));
 	}
 }
 BENCHMARK(PushBackPopFrontCBFixed)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
@@ -51,7 +37,7 @@ BENCHMARK(PushBackPopFrontCBFixed)->Range(range_start, range_stop)->Unit(benchma
 //-------------------------
 
 
-
+#if 0
 //-------------------------
 // create containter
 
@@ -245,6 +231,7 @@ static void PopFrontCB(benchmark::State& state) {
 BENCHMARK(PopFrontCB)->Range(range_start, range_stop)->Unit(benchmark::kNanosecond);
 //-------------------------
 
+#endif
 
 
 

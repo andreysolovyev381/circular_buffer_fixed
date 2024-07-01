@@ -14,47 +14,35 @@
 #include <type_traits>
 #include <cassert>
 
-using T = double;
+using data_alias = double;
 
-static const T lower_bound = -1.e5;
-static const T upper_bound = 1.e5;
-static double const double_value {42.5};
+static constexpr data_alias lower_bound = -1.e5;
+static constexpr data_alias upper_bound = 1.e5;
+static constexpr data_alias  double_value {42.5};
 
-template <typename Container>
-using IsContainer = std::enable_if_t<std::disjunction_v<
-		std::is_same<Container, std::deque<typename Container::value_type>>,
-		std::is_same<Container, std::vector<typename Container::value_type>>,
-		std::is_same<Container, boost::circular_buffer<typename Container::value_type>>,
-		std::is_same<Container, containers::CircularBufferFixed<typename Container::value_type>>
->, bool>;
+static constexpr int cb_capacity {1 << 5};
+using CBFixed = containers::CircularBufferFixed<data_alias, cb_capacity>;
 
-int warm_up () {
-	int res {0};
-	for (std::size_t i = 0, j = 1e6; i != j; ++i) {
-		res = prm(0, i);
-	}
-	return res;
-}
-
-template<typename  Container, IsContainer<Container> = true>
+template<typename Container>
+requires (requires {!std::same_as<Container, CBFixed>;})
 Container create (std::size_t size) {
-	if constexpr (!std::is_same_v<Container, containers::CircularBufferFixed<typename Container::value_type>>) {
-		Container container;
-		container.resize(size);
-		return container;
-	}
-	else {
-		Container container(size, typename Container::value_type{} );
-		return container;
-	}
+	Container container;
+	container.resize(size);
+	return container;
 }
 
-template<typename  Container, IsContainer<Container> = true>
+template<>
+CBFixed create (std::size_t) {
+	CBFixed container(data_alias{});
+	return container;
+}
+
+template<typename  Container>
 Container copy (const Container &container) {
 	return Container{begin(container), end(container)};
 }
 
-template<typename  Container, IsContainer<Container> = true>
+template<typename  Container>
 Container address_at (Container const &container, std::size_t size) {
 	Container results {create<Container>(size)};
 	int j {0};
@@ -65,7 +53,7 @@ Container address_at (Container const &container, std::size_t size) {
 	return results;
 }
 
-template<typename  Container, IsContainer<Container> = true>
+template<typename  Container>
 Container address_square_brackets (Container const &container, std::size_t size) {
 	Container results {create<Container>(size)};
 	int j {0};
@@ -76,7 +64,7 @@ Container address_square_brackets (Container const &container, std::size_t size)
 	return results;
 }
 
-template<typename  Container, IsContainer<Container> = true>
+template<typename  Container>
 Container push_back_on_empty (std::size_t new_elem_count) {
 	Container container;
 	for (std::size_t i = 0, j = new_elem_count; i != j; ++i) {
@@ -86,7 +74,7 @@ Container push_back_on_empty (std::size_t new_elem_count) {
 }
 
 
-template<typename  Container, IsContainer<Container> = true>
+template<typename  Container>
 int pop_front (Container &container) {
 	int count = 0;
 	assert(container.size() > 0);
@@ -106,7 +94,7 @@ int pop_front (Container &container) {
 }
 
 
-template<typename  Container, IsContainer<Container> = true>
+template<typename  Container>
 int push_back_then_pop_front (Container &container, std::size_t iterations) {
 	assert(container.size() > 0);
 	int count {0};
@@ -122,8 +110,8 @@ int push_back_then_pop_front (Container &container, std::size_t iterations) {
 		else if constexpr (std::is_same_v<Container, boost::circular_buffer<typename Container::value_type>>) {
 			container.push_back(double_value);
 		}
-		else if constexpr (std::is_same_v<Container, containers::CircularBufferFixed<typename Container::value_type>>) {
-			container.pushBack(double_value);
+		else if constexpr (std::is_same_v<Container, containers::CircularBufferFixed<typename Container::value_type, Container::capacity()>>) {
+			container.push_back(double_value);
 		}
 		count += count / double_value;
 	}
